@@ -1,6 +1,4 @@
 export PATH="$PATH:~/Library/Application Support/JetBrains/Toolbox/scripts"
-export PATH="$PATH:~/bin:/Users/ted/src/github.com/valencemedia/bb/bin"
-
 export PHP_IDE_CONFIG="serverName=0.0.0.0"
 
 eval $(thefuck --alias f)

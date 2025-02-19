@@ -1,2 +1,2 @@
 ValenceMedia/bb
-ted-dev
+tgolsen/install

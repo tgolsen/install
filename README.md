@@ -14,6 +14,7 @@ Get it in the repo here: https://github.com/tgolsen/install
   * 1Password config file (see [example](./onepassword.env.example))
 
 ## Install
+Download the repo https://github.com/tgolsen/install/archive/refs/heads/main.zip
 
 Run the [install](./install) script. There will be prompts but I tried to keep them to a minimum.
 
