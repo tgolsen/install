@@ -1,0 +1,147 @@
+#! /bin/bash
+
+# homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Files containing package lists
+FORMULA_FILE="./manifests/formulas.txt" # Replace with your formula list file
+CASK_FILE="./manifests/casks.txt"       # Replace with your cask list file
+REPO_FILE="./manifests/repos.txt"       # Replace with your cask list file
+
+# Function to install formulas
+install_formulas() {
+  if [ -f "$FORMULA_FILE" ]; then
+    echo "Installing Homebrew formulas from $FORMULA_FILE..."
+    while IFS= read -r FORMULA; do
+      if [ -n "$FORMULA" ]; then
+        echo "Installing formula: $FORMULA..."
+        brew install "$FORMULA"
+      fi
+    done < "$FORMULA_FILE"
+    echo "Finished installing formulas."
+  else
+    echo "Formula file $FORMULA_FILE does not exist."
+  fi
+}
+
+# Function to install casks
+install_casks() {
+  if [ -f "$CASK_FILE" ]; then
+    echo "Installing Homebrew casks from $CASK_FILE..."
+    while IFS= read -r CASK; do
+      if [ -n "$CASK" ]; then
+        echo "Installing cask: $CASK..."
+        brew install --cask "$CASK"
+      fi
+    done < "$CASK_FILE"
+    echo "Finished installing casks."
+  else
+    echo "Cask file $CASK_FILE does not exist."
+  fi
+}
+
+# Function to install fonts
+install_fonts() {
+    # Check if the fonts directory exists
+    if [ -d "./fonts" ]; then
+      echo "Installing fonts from ./fonts to Font Book..."
+
+      # Copy all font files into the system font directory
+      cp -v "./fonts"/*.{ttf,otf} "$HOME/Library/Fonts" 2>/dev/null
+
+      echo "All compatible fonts have been installed to Font Book."
+    else
+      echo "Fonts directory ./fonts does not exist!"
+      exit 1
+    fi
+}
+
+configure_1pass(){
+    # Prompt for config
+    echo "Enter location of 1Password config file (see onepassword.env.example):"
+    read -p "Enter the path to the configuration file: " CONFIG_FILE
+
+    # Check if the file exists
+    if [ ! -f "$CONFIG_FILE" ]; then
+      echo "Configuration file not found: $CONFIG_FILE"
+      exit 1
+    fi
+
+    # Process each line in the configuration file
+    while IFS=$'\t' read -r VALUE1 VALUE2 VALUE3; do
+      # Skip empty lines
+      if [ -z "$VALUE1" ] || [ -z "$VALUE2" ] || [ -z "$VALUE3" ]; then
+        continue
+      fi
+
+      # Run the desired command with the extracted values
+      echo "Adding account with address $VALUE1, email $VALUE2, and secret key $VALUE3..."
+      op account add --address "$VALUE1" --email "$VALUE2" --secret-key "$VALUE3"
+    done < "$CONFIG_FILE"
+
+    echo "All accounts processed from the configuration file."
+
+    op vault
+}
+
+install_xcode() {
+    # Read values into env from 1Password
+    XCODES_USERNAME=`op item get Apple --fields label=userName`
+    XCODES_PASSWORD=`op item get Apple --fields label=password`
+
+    xcodes install --latest --experimental-unxip<<EOM
+$XCODES_USERNAME
+$XCODES_PASSWORD
+EOM
+}
+
+get_repos() {
+  mkdir -p ~/src
+  cd ~/src || exit
+
+  if [ -f "$REPO_FILE" ]; then
+    echo "Cloning GitHub repos from $REPO_FILE..."
+    while IFS= read -r REPO; do
+      if [ -n "$REPO" ]; then
+        # Extract the organization and repo name from the REPO string
+        ORG=$(echo "$REPO" | cut -d'/' -f1)
+        REPO_NAME=$(echo "$REPO" | cut -d'/' -f2)
+
+        # Create the folder for the organization and clone the repo into it
+        mkdir -p "$ORG"
+        cd "$ORG" || exit
+
+        # Clone the repository
+        echo "Cloning repo: git@github.com:$REPO.git into ~/src/$ORG/$REPO_NAME"
+        git clone git@github.com:$REPO.git
+
+        # Return to the src directory for the next repo
+        cd ~/src || exit
+      fi
+    done < "$REPO_FILE"
+    echo "Finished cloning repositories."
+  else
+    echo "Repo file $REPO_FILE does not exist."
+  fi
+
+}
+
+# Run installs
+install_formulas
+install_casks
+configure_1pass
+install_fonts
+./bin/onePass2LocalCreds
+get_repos
+
+# git alias
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.st status
+
+sudo defaults write /Library/Preferences/.GlobalPreferences AppleEnableSiri -bool false
+
+install_xcode
+
+echo "All installations completed!"

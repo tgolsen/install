@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Function to back up a file before overwriting
+backup_file() {
+  local FILE="$1" # File to back up
+  if [ -f "$FILE" ]; then
+    local TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+    local BACKUP_FILE="${FILE}.${TIMESTAMP}.bak"
+    echo "Backing up $FILE to $BACKUP_FILE"
+    cp "$FILE" "$BACKUP_FILE"
+  fi
+}
+
+# Backup AWS CLI config and credentials files
+backup_file ~/.aws/config
+backup_file ~/.aws/credentials
+
+# Fetch and clean the AWSCLI Config
+echo "Fetching new AWSCLI Config..."
+op item get "AWSCLI Config" --fields label=notesPlain | sed 's/^"//;s/"$//' > ~/.aws/config
+
+# Fetch and clean the AWSCLI Credentials
+echo "Fetching new AWSCLI Credentials..."
+op item get "AWSCLI Credentials" --fields label=notesPlain | sed 's/^"//;s/"$//' > ~/.aws/credentials
+
+echo "AWS CLI config has been updated successfully."

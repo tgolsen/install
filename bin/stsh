@@ -1,0 +1,44 @@
+#!/usr/local/bin/php
+<?php
+// Launch GH
+// e.g. https://github.com/SpinMedia/spin.com/tree/feature/migrations-bump
+
+// Bitbucket style
+// https://git.bbthr.com/7999/fe/thr-frontend/tree/feature/BB-8634-remove-hardcoded-paths-setup-composer
+// https://git.bbthr.com/projects/FE/repos/thr-frontend/browse?at=refs%2Fheads%2Ffeature%2FBB-8634-remove-hardcoded-paths-setup-composer
+
+// Bitbucket cloud style
+// https://bitbucket.org/billboardmedia/bbcli
+// https://bitbucket.org/billboardmedia/bbcli/branch/wip-docker-stuff
+
+$remote = "";
+foreach (explode("\n",`git remote -v show`) as $remote) {
+    if (preg_match("#^origin#", $remote)) {
+        break;
+    }
+}
+$branch = trim(`git rev-parse --abbrev-ref HEAD`);
+
+if (preg_match("/git@([^:]+):([^\/]+)\/(.+)\.git/", $remote, $matches) && isset($matches[3])) {
+    var_export($matches);
+    $url = "https://{$matches[1]}/{$matches[2]}/{$matches[3]}";
+
+    if (!empty($branch) && $branch != "master") {
+        $url .= "/tree/" . urlencode("$branch");
+    }
+} elseif (preg_match("#https?:\/\/.*?@?(.+?)\/scm\/(\w+)\/(\w+)\.git#", $remote, $matches) && isset($matches[3])
+    || preg_match("#ssh.*?@(.+?):\d+\/(\w+)\/([\w-]+).git#", $remote, $matches) && isset($matches[3])
+    || preg_match("#ssh:\/\/(.+?):\d+\/(\w+)\/([\w\.-]+)#", $remote, $matches) && isset($matches[3])
+) {
+    $url = "https://{$matches[1]}/projects/{$matches[2]}/repos/{$matches[3]}/browse";
+    if (!empty($branch) && $branch != "master") {
+        $url .= "?at=" . urlencode("refs/heads/$branch");
+    }
+} else {
+    die ("no matches");
+}
+
+
+echo "Opening $url ... \n";
+# `open -a 'Google Chrome' '$url'`;
+`open '$url'`;

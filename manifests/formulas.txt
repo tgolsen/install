@@ -1,0 +1,10 @@
+curl
+wget
+php
+node
+python
+git
+nvm
+docker
+mas
+1password-cli
